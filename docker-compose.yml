@@ -1,0 +1,43 @@
+services:
+  # Nodo 1: Laravel
+  nodo-laravel:
+    build:
+      context: ./nodo-laravel
+    container_name: blockchain-laravel
+    ports:
+      - "8010:8000"
+    volumes:
+      - ./nodo-laravel:/var/www/html
+    networks:
+      - blockchain-net
+
+  # Nodo 2: Express
+  nodo-express:
+    build:
+      context: ./nodo-express
+    container_name: blockchain-express
+    ports:
+      - "8011:3000"
+    volumes:
+      - ./nodo-express:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - blockchain-net
+
+  # Nodo 3: Next.js
+  nodo-nextjs:
+    build:
+      context: ./nodo-nextjs
+    container_name: blockchain-next
+    ports:
+      - "8012:3000"
+    volumes:
+      - ./nodo-nextjs:/usr/src/app
+      - /usr/src/app/node_modules
+      - /usr/src/app/.next
+    networks:
+      - blockchain-net
+
+networks:
+  blockchain-net:
+    driver: bridge
