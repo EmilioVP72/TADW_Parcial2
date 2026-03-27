@@ -1,0 +1,11 @@
+# Ignorar dependencias de Next.js y Express en cualquier subcarpeta
+**/node_modules/
+**/.next/
+npm-debug.log
+
+# Ignorar dependencias de Laravel
+**/vendor/
+
+# Ignorar archivos con credenciales 
+**/.env
+**/.env.*
