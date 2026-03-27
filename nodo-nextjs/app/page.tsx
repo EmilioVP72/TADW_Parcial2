@@ -20,7 +20,7 @@ export default function Home() {
   const [formData, setFormData] = useState({
     nombre: '',
     apellido_paterno: '',
-    institucion: '',
+    institucion_nombre: '',
     titulo_obtenido: '',
   })
 
@@ -104,7 +104,7 @@ export default function Home() {
       const data: TransactionResponse = await response.json()
       if (response.ok) {
         setTransactionMessage('✓ Transacción creada exitosamente')
-        setFormData({ nombre: '', apellido_paterno: '', institucion: '', titulo_obtenido: '' })
+        setFormData({ nombre: '', apellido_paterno: '', institucion_nombre: '', titulo_obtenido: '' })
         await fetchChain()
       } else {
         setTransactionMessage(`✗ ${(data as Record<string, unknown>).error || 'Error desconocido'}`)
@@ -215,9 +215,9 @@ export default function Home() {
               />
               <input
                 type="text"
-                name="institucion"
+                name="institucion_nombre"
                 placeholder="Institución"
-                value={formData.institucion}
+                value={formData.institucion_nombre}
                 onChange={handleFormChange}
                 required
                 className="bg-slate-700 border border-slate-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-blue-500"

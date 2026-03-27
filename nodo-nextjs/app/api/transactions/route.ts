@@ -8,65 +8,96 @@ export async function POST(req: Request) {
     const body = await req.json()
 
     const {
-      persona_id,
-      institucion_id,
-      programa_id,
-      fecha_inicio,
-      fecha_fin,
+      nombre,
+      apellido_paterno,
+      institucion_nombre,
       titulo_obtenido,
-      numero_cedula,
-      titulo_tesis,
-      menciones,
-      firmado_por,
     } = body
 
     // Validar campos requeridos
-    if (
-      !persona_id ||
-      !institucion_id ||
-      !programa_id ||
-      !fecha_inicio ||
-      !fecha_fin ||
-      !titulo_obtenido ||
-      !numero_cedula ||
-      !titulo_tesis
-    ) {
+    if (!nombre || !apellido_paterno || !institucion_nombre || !titulo_obtenido) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required fields: nombre, apellido_paterno, institucion_nombre, titulo_obtenido" },
         { status: 400 }
       )
     }
 
-    // Insertar en la tabla grados
-    const { data, error } = await supabase
-      .from("grados")
+    // 1. Insertar persona y obtener UUID
+    const { data: personaData, error: personaError } = await supabase
+      .from("personas")
       .insert({
-        persona_id,
-        institucion_id,
-        programa_id,
-        fecha_inicio,
-        fecha_fin,
-        titulo_obtenido,
-        numero_cedula,
-        titulo_tesis,
-        menciones: menciones || null,
-        hash_actual: "",
-        hash_anterior: null,
-        nonce: 0,
-        firmado_por: firmado_por || null,
+        nombre,
+        apellido_paterno,
       })
-      .select()
+      .select("id")
 
-    if (error) {
+    if (personaError) {
       return NextResponse.json(
-        { error: error.message },
+        { error: `Error inserting persona: ${personaError.message}` },
         { status: 500 }
       )
     }
 
-    const insertedGrado: GradoBloque = data?.[0]
+    const personaId = personaData?.[0]?.id
+    if (!personaId) {
+      return NextResponse.json(
+        { error: "Failed to get persona ID" },
+        { status: 500 }
+      )
+    }
 
-    // Propagar a otros nodos
+    // 2. Insertar institución y obtener UUID
+    const { data: institucionData, error: institucionError } = await supabase
+      .from("instituciones")
+      .insert({
+        nombre: institucion_nombre,
+      })
+      .select("id")
+
+    if (institucionError) {
+      return NextResponse.json(
+        { error: `Error inserting institucion: ${institucionError.message}` },
+        { status: 500 }
+      )
+    }
+
+    const institucionId = institucionData?.[0]?.id
+    if (!institucionId) {
+      return NextResponse.json(
+        { error: "Failed to get institucion ID" },
+        { status: 500 }
+      )
+    }
+
+    // 3. Insertar en grados con los UUIDs obtenidos
+    const { data: gradoData, error: gradoError } = await supabase
+      .from("grados")
+      .insert({
+        persona_id: personaId,
+        institucion_id: institucionId,
+        titulo_obtenido,
+        hash_actual: "",
+        hash_anterior: null,
+        nonce: 0,
+      })
+      .select()
+
+    if (gradoError) {
+      return NextResponse.json(
+        { error: `Error inserting grado: ${gradoError.message}` },
+        { status: 500 }
+      )
+    }
+
+    const insertedGrado: GradoBloque = gradoData?.[0]
+    if (!insertedGrado) {
+      return NextResponse.json(
+        { error: "Failed to get inserted grado" },
+        { status: 500 }
+      )
+    }
+
+    // 4. Propagar a otros nodos
     await propagarANodos("/api/transactions", body)
 
     return NextResponse.json(insertedGrado, { status: 201 })
