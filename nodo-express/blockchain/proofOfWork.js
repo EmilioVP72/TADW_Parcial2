@@ -8,7 +8,7 @@ export function mineBlock(block) {
     nonce++;
     block.nonce = nonce;
     hash = calculateHash(block);
-  } while (!hash.startsWith("00"));
+  } while (!hash.startsWith("000"));
 
   return {
     ...block,

@@ -17,3 +17,7 @@ export function addBlock(block) {
   chain.push(block);
   pendingTransactions = [];
 }
+
+export function replaceChain(newChain) {
+  chain = newChain;
+}

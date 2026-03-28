@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
-import { esCAdenaMasLarga } from "@/lib/blockchain"
+import { esCAdenaMasLarga, getPeerNodes } from "@/lib/blockchain"
 import type { GradoBloque } from "@/lib/blockchain"
 
 export async function GET() {
   try {
-    // 1. Leer PEER_NODES
-    const peerNodesEnv = process.env.PEER_NODES || ""
-    const peerNodes = peerNodesEnv
-      .split(",")
-      .map((node) => node.trim())
-      .filter((node) => node.length > 0)
+    // 1. Leer Nodos
+    const peerNodes = getPeerNodes()
 
     // 2. Consultar cadena local
     const baseUrl = process.env.NODE_URL || "http://localhost:8012"

@@ -2,6 +2,25 @@ import "server-only"
 
 import { createHash } from "crypto"
 
+declare global {
+  var registeredNodes: string[] | undefined;
+}
+
+export function getPeerNodes(): string[] {
+  if (!globalThis.registeredNodes) {
+    const envNodes = process.env.PEER_NODES ? process.env.PEER_NODES.split(",").map((n: string) => n.trim()).filter(Boolean) : [];
+    globalThis.registeredNodes = envNodes;
+  }
+  return globalThis.registeredNodes || [];
+}
+
+export function addPeerNode(url: string) {
+  const nodes = getPeerNodes();
+  if (!nodes.includes(url)) {
+    nodes.push(url);
+  }
+}
+
 /**
  * Tipo de un bloque en la blockchain de grados.
  * Corresponde a la tabla grados de Supabase.
@@ -69,7 +88,7 @@ export function proofOfWork(
     nonce
   )
 
-  while (!hash.startsWith("00")) {
+  while (!hash.startsWith("000")) {
     nonce++
     hash = calcularHash(
       personaId,
@@ -174,13 +193,11 @@ export async function propagarANodos(
   endpoint: string,
   body: Record<string, unknown>
 ): Promise<void> {
-  const peerNodesEnv = process.env.PEER_NODES
-  if (!peerNodesEnv) {
+  const peerNodes = getPeerNodes()
+  if (peerNodes.length === 0) {
     // Sin nodos pares, no hay a qué propagar.
     return
   }
-
-  const peerNodes = peerNodesEnv.split(",").map((node) => node.trim())
 
   const promises = peerNodes.map(async (peerUrl) => {
     try {

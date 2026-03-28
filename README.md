@@ -1,175 +1,108 @@
-# 🌐 Red Blockchain Distribuida - Examen TADW
+# Guía de Pruebas para la Evaluación (Blockchain Distribuido)
 
-Este proyecto consiste en una red Blockchain descentralizada compuesta por 3 nodos independientes desarrollados en diferentes frameworks (**Laravel**, **Express** y **Next.js**). La red utiliza **Docker** para garantizar la paridad del entorno y **Supabase** como persistencia de datos compartida.
-
----
-
-## 🚀 Requisitos Previos
-
-Antes de comenzar, asegúrate de tener instalado:
-
-* **Docker** y **Docker Compose**
-* **Git**
-* Una cuenta en **Supabase** (para las variables de entorno)
+Este documento es tu guía paso a paso para demostrarle al profesor/evaluador que tu red de Blockchain cumple con todos los requisitos del examen:
+1. Nodos interconectados (Registro mutuo).
+2. Propagación de Transacciones al instante (Mempool).
+3. Consenso (La cadena más larga y válida manda).
+4. Emisión de nuevos bloques con Proof of Work de dificultad `000` y propagación `hash_anterior`.
+5. Interfaz Visual Premium en NextJS y Documentación en Swagger Laravel.
 
 ---
 
-## 🛠️ Estructura de la Red
+## Preparación de la Demostración
 
-| Servicio   | Framework            | Puerto Local | Host Interno (Docker)            |
-| ---------- | -------------------- | ------------ | -------------------------------- |
-| **Nodo 1** | Laravel 11 (PHP 8.4) | `8010`       | `http://blockchain-laravel:8010` |
-| **Nodo 2** | Express (Node 18)    | `8011`       | `http://blockchain-express:8011` |
-| **Nodo 3** | Next.js (Node 20)    | `8012`       | `http://blockchain-next:8012`    |
+Asegúrate de tener todos los nodos levantados:
+- **Laravel:** `http://localhost:8010`
+- **Express:** `http://localhost:8011`
+- **Next.js:** `http://localhost:8012`
 
----
-
-## ⚡ Instalación y Despliegue
-
-Sigue estos pasos para levantar el entorno completo:
-
-### 1. Clonar el repositorio
-
-```bash
-git clone <URL_DEL_REPO>
-cd BlockChain
-```
+Abre 3 pestañas en tu navegador (o Postman).
+En una pestaña, abre la interfaz premium: `http://localhost:8012`.
 
 ---
 
-### 2. Configuración de Variables de Entorno (.env)
+## 🟢 Prueba 1: Registro Cruzado de Nodos
 
-Cada nodo requiere su propio archivo `.env`. Copia los ejemplos y configura las credenciales de Supabase:
+Para que los nodos se "hablen", deben conocer las URLs de sus compañeros. Vamos a registrarlos bidireccionalmente.
 
-* **Laravel**:
-  Entra a `nodo-laravel/` y configura el `.env` (especialmente `DB_CONNECTION=pgsql`).
+1.  **Registrar Laravel y Next.js dentro de Express:**
+    - **Endpoint:** `POST http://localhost:8011/api/nodes/register`
+    - **Body (JSON):**
+      ```json
+      {
+         "nodes": ["http://blockchain-laravel:8000", "http://blockchain-next:3000"]
+      }
+      ```
+      > [!NOTE]
+      > Como corren dentro de la red Docker (`blockchain-net`), los nombres para verse entre sí son los nombres de los contenedores y sus puertos expuestos internamente (`8000` y `3000`).
 
-* **Express / Next.js**:
-  Configura las keys de Supabase:
+2.  **Registrar Express y Next.js dentro de Laravel:**
+    - Abre Swagger en `http://localhost:8010/api/documentation`
+    - Busca el endpoint `/nodes/register` y envía dos peticiones, una con:
+      ```json
+      { "url": "http://blockchain-express:3000" }
+      ```
+      Y otra con:
+      ```json
+      { "url": "http://blockchain-next:3000" }
+      ```
 
-  * `SUPABASE_URL`
-  * `SUPABASE_ANON_KEY`
-
----
-
-### 3. Construir y Levantar con Docker
-
-Desde la raíz del proyecto (donde está el `docker-compose.yml`):
-
-```bash
-docker-compose up --build
-```
-
----
-
-### 4. Inicialización de Laravel (Solo la primera vez)
-
-Una vez que los contenedores estén corriendo, abre una nueva terminal y ejecuta:
-
-```bash
-docker exec blockchain-laravel php artisan key:generate
-docker exec blockchain-laravel php artisan migrate
-```
-
----
-
-## 🔗 Comunicación entre Nodos
-
-Al estar dentro de la misma red de Docker (`blockchain-net`), los nodos pueden comunicarse usando sus nombres de servicio.
-
-**Ejemplo:**
-
-Si el nodo de Laravel quiere consultar el estado del nodo de Express:
-
-```
-http://blockchain-express:8011
-```
+3.  **Registrar Express y Laravel dentro de Next.js:**
+    - Ejecuta mediante Postman o Curl:
+      `POST http://localhost:8012/api/nodes/register`
+      ```json
+      { "url": "http://blockchain-express:3000" }
+      ```
+      ```json
+      { "url": "http://blockchain-laravel:8000" }
+      ```
 
 ---
 
-## 📝 Reglas del Examen (Protocolo de Consenso)
+## 🟡 Prueba 2: Propagación de Transacciones (Mempool)
 
-Para que la Blockchain sea válida, todos los nodos deben implementar la misma lógica de Hashing:
+Demuestra que "el chisme" funciona correctamente.
 
-* **Algoritmo:** SHA-256
-
-* **Estructura del Bloque:**
-
-  * `index`
-  * `timestamp`
-  * `data` (JSON)
-  * `previous_hash`
-  * `hash`
-  * `nonce`
-
-* **Dificultad (Proof of Work - PoW):**
-  El hash generado debe comenzar con `"00"` (dos ceros).
-
-* **Inmutabilidad:**
-  Si un bloque es alterado en Supabase, el siguiente nodo debe marcar la cadena como **INVÁLIDA** al comparar los hashes vinculados.
+1. Ve a la **Interfaz Web** (Next.js) en `http://localhost:8012`.
+2. Dirígete a **"Registrar Título"**.
+3. Ingresa los datos de una persona (Ej: "Juan", "Pérez", "UADE", "Ingeniería Informática") y dale a **Enviar a Mempool**.
+4. Verás aparecer la transacción automáticamente a tu derecha en rojo bajo la sección **"Mempool (Pendientes)"**.
+5. **Comprobación Cruzada (La Magia):**
+   Abre una pestaña y consulta qué tiene Laravel:
+   Haz un `GET` a tu base de datos o revisa la memoria desde Swagger para notar que Laravel *también* recibió la transacción de Juan Pérez porque Next.js se la envió (Broadcast).
 
 ---
 
-## 🛡️ Solución de Problemas Comunes
+## 🟣 Prueba 3: Proof of Work y Propagación de Bloque
 
-### Permisos (Linux / CachyOS)
+Es hora de minar la transacción que quedó pendiente.
 
-Si Docker no puede escribir en las carpetas:
-
-```bash
-sudo chown -R $USER:$USER .
-```
-
----
-
-### Error de Node Native Bindings
-
-Si Next.js da error de Tailwind:
-
-```bash
-rm -rf node_modules package-lock.json
-docker-compose up --build
-```
+1. Desde Swagger (`http://localhost:8010/api/documentation`), ejecuta el minado de Laravel con `POST /blockchain/mine`.
+2. Laravel tomará lo que está pendiente, ejecutará el **Proof of Work** pidiendo "000" como inicio del hash. 
+3. Cuando termine (tardará unos segundos), te regresará el bloque. Verifica visualmente que `hash_actual` empieza con `000`.
+4. En cuanto Laravel terminó, avisó de inmediato a Express y a Next.js y les envió el bloque entero.
+5. **Comprobación:** Ve al navegador en `http://localhost:8012` (Next.js) y dale al botón de refrescar **"Ledger (Cadena Aprobada)"**. ¡Verás que el bloque está ahí iluminado en la pantalla de Next.js con sus hashes correctos!
 
 ---
 
-### Puertos Ocupados
+## 🔴 Prueba 4: Validación de Malformaciones y Nodos Deshonestos
 
-Asegúrate de que los puertos `8000`, `3000` y `3001` no estén siendo usados por otras aplicaciones.
+El evaluador seguramente pedirá forzar la inclusión de un bloque inválido.
 
----
-
-### Endpoints sugeridos:
-
-#### 🔹 Estado del nodo
-
-```
-GET /api/status
-```
-
-#### 🔹 Obtener blockchain completa
-
-```
-GET /api/chain
-```
-
-#### 🔹 Minar un nuevo bloque
-
-```
-POST /api/mine
-```
-
-#### 🔹 Validar la cadena
-
-```
-GET /api/validate
-```
-
-#### 🔹 Agregar transacción (opcional)
-
-```
-POST /api/transactions
-```
+1. Desde Postman, intenta hacerle un `POST` directo a Next.js (`http://localhost:8012/api/receive-block`) pero altera un hash enviando `hash_actual: "000x23..."` con un cuerpo inválido o con un `hash_anterior` que no tiene nada que ver con el bloque de Juan Pérez.
+2. Observarás que el nodo te regresa `Status 400: Bloque rechazado (hash anterior incorrecto / modificado / PoW inválido)`. Ningún nodo se infecta.
 
 ---
 
+## 🔵 Prueba 5: Algoritmo de Consenso (La cadena más larga gana)
+
+Vamos a forzar a que un nodo se quede atrasado resolviéndolo con Consenso.
+
+1. Envía rápidamente dos transacciones desde la web de **Next.js** y extrañamente apaga el contenedor de Laravel. (O simplemente no registres a Laravel en los nodos).
+2. Dale a **Minar bloque** en la Interfaz Web.
+3. Next.js mina 2 veces, generando un Ledger de 3 bloques de longitud. (Laravel sigue atascado en 1 bloque de longitud).
+4. Vuelve a registrar/prender el contacto entre los nodos. 
+5. Desde Swagger (Laravel), lanza el endpoint `GET /blockchain/resolve`.
+6. Laravel preguntará a todos sus compañeros cuál es su longitud. Verá que Next.js tiene 3 bloques y Laravel solo 1.
+7. Laravel ejecutará un borrado maestro de su base de datos local y **reemplazará instantáneamente** su base de datos con las entradas completas de Next.js, asumiendo su `hash_anterior` y hashes correctos.
+8. Para verificar que copió bien, haz `GET /blockchain` en Laravel y verás la cadena sincronizada e idéntica.

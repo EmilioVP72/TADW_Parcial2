@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { addPeerNode, getPeerNodes } from "@/lib/blockchain"
 
 export async function POST(req: Request) {
   try {
@@ -6,13 +7,14 @@ export async function POST(req: Request) {
 
     const { url } = body
 
-    // Validar que url está presente
     if (!url) {
       return NextResponse.json(
         { error: "Missing required field: url" },
         { status: 400 }
       )
     }
+
+    addPeerNode(url)
 
     return NextResponse.json(
       {
@@ -32,11 +34,7 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const peerNodesEnv = process.env.PEER_NODES || ""
-    const peers = peerNodesEnv
-      .split(",")
-      .map((peer) => peer.trim())
-      .filter((peer) => peer.length > 0)
+    const peers = getPeerNodes()
 
     return NextResponse.json(
       {
