@@ -1,0 +1,185 @@
+import express from "express";
+import { getChain } from "../blockchain/blockchain.js";
+import { addTransaction } from "../blockchain/blockchain.js";
+import { broadcastTransaction } from "../services/network.js";
+import { registerNodes } from "../services/network.js";
+import { getPendingTransactions, addBlock } from "../blockchain/blockchain.js";
+import { mineBlock } from "../blockchain/proofOfWork.js";
+import { calculateHash } from "../blockchain/hash.js";
+import supabase from "../services/supabase.js";
+import { getNodes } from "../services/network.js";
+import axios from "axios";
+
+const router = express.Router();
+
+
+router.get("/status", (req, res) => {
+  res.json({
+    status: "ok",
+    node: "express",
+    blocks: getChain().length
+  });
+});
+
+router.get("/chain", (req, res) => {
+  res.json(getChain());
+});
+
+router.post("/transactions", async (req, res) => {
+  const transaction = req.body;
+
+  addTransaction(transaction);
+
+  await broadcastTransaction(transaction);
+
+  res.json({
+    message: "Transacción agregada y propagada"
+  });
+});
+
+router.post("/mine", async (req, res) => {
+  const chain = getChain();
+  const pending = getPendingTransactions();
+
+  if (pending.length === 0) {
+    return res.json({
+      message: "No hay transacciones para minar"
+    });
+  }
+
+  const previousBlock = chain[chain.length - 1];
+
+  const newBlock = {
+    index: chain.length + 1,
+    timestamp: Date.now(),
+    data: pending,
+    previous_hash: previousBlock ? previousBlock.hash : "0",
+    nonce: 0
+  };
+
+  const minedBlock = mineBlock(newBlock);
+
+  addBlock(minedBlock);
+  const nodes = getNodes();
+
+  for (const node of nodes) {
+    try {
+      await axios.post(`${node}/api/receive-block`, minedBlock);
+      console.log("Bloque enviado a:", node);
+    } catch (err) {
+      console.log("Error enviando bloque a:", node);
+    }
+  }
+  try {
+    const tx = minedBlock.data[0];
+
+    if (!tx) {
+      console.log("No hay datos para guardar en Supabase");
+      return res.json({
+        message: "Bloque minado pero sin datos"
+      });
+    }
+
+    const { data, error, status } = await supabase
+      .from("grados")
+      .insert({
+        persona_id: tx.persona_id || null,
+        institucion_id: tx.institucion_id || null,
+        programa_id: tx.programa_id || null,
+        fecha_inicio: tx.fecha_inicio || null,
+        fecha_fin: tx.fecha_fin || null,
+        titulo_obtenido: tx.titulo_obtenido || "",
+        numero_cedula: tx.numero_cedula || null,
+        titulo_tesis: tx.titulo_tesis || null,
+        menciones: tx.menciones || null,
+        hash_actual: minedBlock.hash,
+        hash_anterior: minedBlock.previous_hash,
+        nonce: minedBlock.nonce,
+        firmado_por: "nodo-express"
+      })
+      .select(); 
+
+
+    if (error) {
+      console.log("Error guardando en Supabase:", error.message);
+    } else {
+      console.log("Guardado correctamente en Supabase");
+    }
+
+  } catch (err) {
+    console.log("Error general Supabase:", err.message);
+  }
+  res.json({
+    message: "Bloque minado",
+    block: minedBlock
+  });
+});
+
+router.get("/validate", (req, res) => {
+  const chain = getChain();
+
+  for (let i = 1; i < chain.length; i++) {
+    const current = chain[i];
+    const previous = chain[i - 1];
+
+    const recalculatedHash = calculateHash(current);
+
+    if (current.hash !== recalculatedHash) {
+      return res.json({ valid: false, error: "Hash inválido" });
+    }
+
+    if (current.previous_hash !== previous.hash) {
+      return res.json({ valid: false, error: "Cadena rota" });
+    }
+  }
+
+  res.json({ valid: true });
+});
+
+router.post("/nodes/register", (req, res) => {
+  const { nodes } = req.body;
+
+  registerNodes(nodes);
+
+  res.json({
+    message: "Nodos registrados",
+    nodes
+  });
+});
+
+router.post("/receive-block", (req, res) => {
+  const newBlock = req.body;
+
+  const chain = getChain();
+  const lastBlock = chain[chain.length - 1];
+
+  if (newBlock.previous_hash !== lastBlock.hash) {
+    return res.json({
+      message: "Bloque rechazado (hash anterior incorrecto)"
+    });
+  }
+
+  const recalculatedHash = calculateHash(newBlock);
+
+  if (recalculatedHash !== newBlock.hash) {
+    return res.json({
+      message: "Bloque rechazado (hash inválido)"
+    });
+  }
+
+  if (!newBlock.hash.startsWith("00")) {
+    return res.json({
+      message: "Bloque rechazado (no cumple PoW)"
+    });
+  }
+
+  addBlock(newBlock);
+
+  console.log("✅ Bloque recibido y aceptado");
+
+  res.json({
+    message: "Bloque aceptado"
+  });
+});
+
+export default router;
