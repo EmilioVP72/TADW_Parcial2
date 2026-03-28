@@ -109,3 +109,30 @@ export async function POST(req: Request) {
     )
   }
 }
+
+export async function GET() {
+  try {
+    const { data, error } = await supabase
+      .from("grados")
+      .select("*")
+      .eq("hash_actual", "")
+      .order("creado_en", { ascending: true })
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      )
+    }
+
+    const transaccionesPendientes: GradoBloque[] = data || []
+
+    return NextResponse.json(transaccionesPendientes, { status: 200 })
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Unknown error"
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: 500 }
+    )
+  }
+}
