@@ -7,6 +7,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("grados")
       .select("*")
+      .neq("hash_actual", "")
       .order("creado_en", { ascending: true })
 
     if (error) {

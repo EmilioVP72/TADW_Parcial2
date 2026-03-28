@@ -10,10 +10,12 @@ interface TransactionResponse {
 
 export default function Home() {
   const [bloques, setBloques] = useState<GradoBloque[]>([])
+  const [transaccionesPendientes, setTransaccionesPendientes] = useState<GradoBloque[]>([])
   const [loadingMine, setLoadingMine] = useState(false)
   const [loadingResolve, setLoadingResolve] = useState(false)
   const [loadingChain, setLoadingChain] = useState(false)
   const [loadingTransaction, setLoadingTransaction] = useState(false)
+  const [loadingPendingTransactions, setLoadingPendingTransactions] = useState(false)
   const [mineMessage, setMineMessage] = useState('')
   const [resolveMessage, setResolveMessage] = useState('')
   const [transactionMessage, setTransactionMessage] = useState('')
@@ -24,9 +26,10 @@ export default function Home() {
     titulo_obtenido: '',
   })
 
-  // Cargar cadena al montar el componente
+  // Cargar cadena y transacciones al montar el componente
   useEffect(() => {
     fetchChain()
+    fetchPendingTransactions()
   }, [])
 
   const fetchChain = async () => {
@@ -44,6 +47,21 @@ export default function Home() {
     }
   }
 
+  const fetchPendingTransactions = async () => {
+    setLoadingPendingTransactions(true)
+    try {
+      const response = await fetch('/api/transactions')
+      if (response.ok) {
+        const data = await response.json()
+        setTransaccionesPendientes(data)
+      }
+    } catch (error) {
+      console.error('Error al cargar transacciones pendientes:', error)
+    } finally {
+      setLoadingPendingTransactions(false)
+    }
+  }
+
   const handleMine = async () => {
     setLoadingMine(true)
     setMineMessage('')
@@ -55,6 +73,7 @@ export default function Home() {
       if (response.ok) {
         setMineMessage(`✓ ${data.mensaje} (${data.bloques_minados} bloque(s))`)
         await fetchChain()
+        await fetchPendingTransactions()
       } else {
         setMineMessage(`✗ ${data.error}`)
       }
@@ -189,7 +208,44 @@ export default function Home() {
           )}
         </section>
 
-        {/* Sección 3: Nueva transacción */}
+        {/* Sección 3: Transacciones pendientes */}
+        <section className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Transacciones pendientes</h2>
+            <button
+              onClick={fetchPendingTransactions}
+              disabled={loadingPendingTransactions}
+              className="bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-white font-semibold py-2 px-4 rounded-lg transition"
+            >
+              {loadingPendingTransactions ? 'Actualizando...' : 'Actualizar'}
+            </button>
+          </div>
+
+          {transaccionesPendientes.length === 0 ? (
+            <p className="text-slate-400 text-center py-8">No hay transacciones pendientes</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+              {transaccionesPendientes.map((tx) => (
+                <div key={tx.id} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+                  <p className="text-xs text-slate-400 mb-2">ID: <code className="bg-slate-800 px-2 py-1 rounded">{tx.id?.substring(0, 8) || 'N/A'}</code></p>
+                  <p className="text-white font-semibold mb-2">{tx.titulo_obtenido}</p>
+                  <p className="text-sm text-slate-300 mb-2">Persona: <code className="bg-slate-800 px-2 py-1 rounded">{tx.persona_id?.substring(0, 8) || 'N/A'}</code></p>
+                  <p className="text-xs text-slate-400">
+                    {tx.creado_en ? new Date(tx.creado_en).toLocaleString('es-ES', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric', 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    }) : 'N/A'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Sección 4: Nueva transacción */}
         <section className="bg-slate-800 rounded-lg p-6 border border-slate-700">
           <h2 className="text-2xl font-bold text-white mb-6">Nueva transacción</h2>
           
