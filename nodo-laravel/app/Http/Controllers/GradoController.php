@@ -74,9 +74,6 @@ class GradoController extends Controller
         }
     }
 
-    /**
-     * Valida la integridad de toda la cadena (Consenso)
-     */
     public function validateChain()
     {
         $grados = Grado::orderBy('creado_en', 'asc')->get();
