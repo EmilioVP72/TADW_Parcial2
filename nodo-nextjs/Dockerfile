@@ -1,12 +1,12 @@
 FROM node:23-alpine
 
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat build-base python3
 
 WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm ci
 
 COPY . .
 
