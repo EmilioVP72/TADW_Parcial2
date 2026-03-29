@@ -1,4 +1,4 @@
-git adimport { readFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import path from 'path';
 import { NextRequest, NextResponse } from 'next/server';
 
