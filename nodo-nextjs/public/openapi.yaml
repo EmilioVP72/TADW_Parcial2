@@ -1,0 +1,655 @@
+openapi: 3.0.0
+info:
+  title: Nodo Blockchain Next.js
+  version: 1.0.0
+  description: API REST del Nodo 3 - Red Blockchain Distribuida TADW
+  contact:
+    name: Soporte TADW
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8012
+    description: Servidor local del nodo blockchain
+
+paths:
+  /api/status:
+    get:
+      summary: Obtener estado del nodo
+      description: Retorna información sobre el estado actual del nodo blockchain, incluyendo su identificación, puerto, framework y pares conectados
+      operationId: getStatus
+      tags:
+        - Estado
+      responses:
+        '200':
+          description: Estado del nodo obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeStatus'
+              example:
+                nodo: nodo-3
+                puerto: 8012
+                framework: Next.js
+                peers:
+                  - url: http://localhost:8011
+                    estado: conectado
+                  - url: http://localhost:8010
+                    estado: conectado
+
+  /api/chain:
+    get:
+      summary: Obtener cadena de bloques
+      description: Retorna el array completo de bloques minados en la cadena blockchain
+      operationId: getChain
+      tags:
+        - Blockchain
+      responses:
+        '200':
+          description: Cadena de bloques obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockchainResponse'
+              example:
+                bloques:
+                  - indice: 0
+                    timestamp: "2026-03-29T10:00:00Z"
+                    transacciones: []
+                    proof: 0
+                    hash_anterior: "0"
+                    hash: "genesis_hash_abc123"
+                  - indice: 1
+                    timestamp: "2026-03-29T10:15:30Z"
+                    transacciones:
+                      - id: tx_001
+                        nombre: Juan
+                        apellido_paterno: Pérez
+                        institucion_nombre: Universidad Nacional
+                        titulo_obtenido: Ingeniero en Sistemas
+                    proof: 35099
+                    hash_anterior: "genesis_hash_abc123"
+                    hash: "block_1_hash_def456"
+
+  /api/transactions:
+    get:
+      summary: Obtener transacciones pendientes
+      description: Retorna el array de transacciones que aún no han sido minadas en un bloque
+      operationId: getPendingTransactions
+      tags:
+        - Transacciones
+      responses:
+        '200':
+          description: Transacciones pendientes obtenidas exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingTransactionsResponse'
+              example:
+                transacciones:
+                  - id: tx_002
+                    nombre: María
+                    apellido_paterno: García
+                    institucion_nombre: Instituto Tecnológico
+                    titulo_obtenido: Licenciada en Administración
+                  - id: tx_003
+                    nombre: Carlos
+                    apellido_paterno: López
+                    institucion_nombre: Universidad Estatal
+                    titulo_obtenido: Ingeniero Civil
+
+    post:
+      summary: Crear nueva transacción
+      description: Registra una nueva transacción (grado) en la piscina de transacciones pendientes. La transacción será incluida en el próximo bloque minado
+      operationId: createTransaction
+      tags:
+        - Transacciones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+            example:
+              nombre: Ana
+              apellido_paterno: Rodríguez
+              institucion_nombre: Universidad Privada
+              titulo_obtenido: Ingeniera en Software
+
+      responses:
+        '201':
+          description: Transacción creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GradoResponse'
+              example:
+                id: tx_004
+                nombre: Ana
+                apellido_paterno: Rodríguez
+                institucion_nombre: Universidad Privada
+                titulo_obtenido: Ingeniera en Software
+                timestamp: "2026-03-29T10:30:45Z"
+                estado: pendiente
+
+        '400':
+          description: Datos inválidos o incompletos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Faltan campos requeridos"
+                campos_requeridos:
+                  - nombre
+                  - apellido_paterno
+                  - institucion_nombre
+                  - titulo_obtenido
+
+  /api/mine:
+    post:
+      summary: Minar nuevo bloque
+      description: Ejecuta el algoritmo de Proof of Work para minar un nuevo bloque con las transacciones pendientes. Sin parámetros en el body
+      operationId: mineBlock
+      tags:
+        - Minería
+      requestBody:
+        content: {}
+
+      responses:
+        '200':
+          description: Bloque minado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MineResponse'
+              example:
+                mensaje: "Bloque minado exitosamente"
+                bloques_minados: 2
+                bloque:
+                  indice: 1
+                  hash: "block_1_hash_def456"
+                  proof: 35099
+                  timestamp: "2026-03-29T10:15:30Z"
+
+        '400':
+          description: No hay transacciones pendientes para minar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "No hay transacciones pendientes para minar"
+
+  /api/nodes/resolve:
+    get:
+      summary: Resolver conflictos de cadena
+      description: Ejecuta el algoritmo de consenso para validar y reemplazar la cadena actual si una cadena válida más larga es encontrada en los pares de la red
+      operationId: resolveChain
+      tags:
+        - Nodos de la Red
+      responses:
+        '200':
+          description: Resolución de cadena completada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolveResponse'
+              example:
+                mensaje: "Cadena actualizada desde nodo par"
+                reemplazada: true
+                bloques: 3
+
+        '200':
+          description: La cadena actual es la válida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolveResponseNoChange'
+              example:
+                mensaje: "La cadena actual es autoritativa"
+                reemplazada: false
+
+  /api/nodes/register:
+    post:
+      summary: Registrar nuevo nodo par
+      description: Registra la URL de un nuevo nodo par en la red blockchain para establecer comunicación entre nodos
+      operationId: registerNode
+      tags:
+        - Nodos de la Red
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodeRegisterRequest'
+            example:
+              url: "http://localhost:8010"
+
+      responses:
+        '201':
+          description: Nodo registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeRegisterResponse'
+              example:
+                mensaje: "Nodo registrado exitosamente"
+                url: "http://localhost:8010"
+
+        '400':
+          description: URL inválida o nodo ya registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Nodo ya registrado o URL inválida"
+                url: "http://localhost:8010"
+
+    get:
+      summary: Obtener lista de pares registrados
+      description: Retorna el array de nodos pares actualmente registrados en esta instancia de la red blockchain
+      operationId: getRegisteredNodes
+      tags:
+        - Nodos de la Red
+      responses:
+        '200':
+          description: Lista de pares obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisteredNodesResponse'
+              example:
+                peers:
+                  - url: "http://localhost:8010"
+                    estado: conectado
+                  - url: "http://localhost:8011"
+                    estado: conectado
+                  - url: "http://localhost:8013"
+                    estado: desconectado
+
+  /api/validate:
+    get:
+      summary: Validar cadena blockchain
+      description: Valida la integridad de toda la cadena blockchain verificando hashes y proofs de todos los bloques
+      operationId: validateChain
+      tags:
+        - Validación
+      responses:
+        '200':
+          description: Validación completada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+              example:
+                valida: true
+                bloques: 3
+                mensaje: "Cadena válida"
+
+        '200':
+          description: Cadena inválida detectada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                valida: false
+                bloques: 3
+                error: "Hash inválido en bloque 2"
+                bloque_problematico: 2
+
+components:
+  schemas:
+    NodeStatus:
+      type: object
+      required:
+        - nodo
+        - puerto
+        - framework
+        - peers
+      properties:
+        nodo:
+          type: string
+          description: Identificador del nodo
+          example: "nodo-3"
+        puerto:
+          type: integer
+          description: Puerto en el que escucha el nodo
+          example: 8012
+        framework:
+          type: string
+          description: Framework utilizado
+          example: "Next.js"
+        peers:
+          type: array
+          description: Lista de nodos pares conectados
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+                example: "http://localhost:8011"
+              estado:
+                type: string
+                enum: [conectado, desconectado]
+                example: "conectado"
+
+    Block:
+      type: object
+      required:
+        - indice
+        - timestamp
+        - transacciones
+        - proof
+        - hash_anterior
+        - hash
+      properties:
+        indice:
+          type: integer
+          description: Índice del bloque en la cadena
+          example: 0
+        timestamp:
+          type: string
+          format: date-time
+          description: Fecha y hora de creación del bloque
+          example: "2026-03-29T10:00:00Z"
+        transacciones:
+          type: array
+          description: Transacciones incluidas en el bloque
+          items:
+            $ref: '#/components/schemas/Transaction'
+        proof:
+          type: integer
+          description: Valor de Proof of Work del bloque
+          example: 35099
+        hash_anterior:
+          type: string
+          description: Hash del bloque anterior
+          example: "genesis_hash_abc123"
+        hash:
+          type: string
+          description: Hash del bloque actual
+          example: "block_1_hash_def456"
+
+    BlockchainResponse:
+      type: object
+      required:
+        - bloques
+      properties:
+        bloques:
+          type: array
+          items:
+            $ref: '#/components/schemas/Block'
+
+    Transaction:
+      type: object
+      required:
+        - id
+        - nombre
+        - apellido_paterno
+        - institucion_nombre
+        - titulo_obtenido
+      properties:
+        id:
+          type: string
+          description: ID único de la transacción
+          example: "tx_001"
+        nombre:
+          type: string
+          description: Nombre de la persona
+          example: "Juan"
+        apellido_paterno:
+          type: string
+          description: Apellido paterno de la persona
+          example: "Pérez"
+        institucion_nombre:
+          type: string
+          description: Nombre de la institución educativa
+          example: "Universidad Nacional"
+        titulo_obtenido:
+          type: string
+          description: Título o grado obtenido
+          example: "Ingeniero en Sistemas"
+
+    PendingTransactionsResponse:
+      type: object
+      required:
+        - transacciones
+      properties:
+        transacciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+
+    TransactionRequest:
+      type: object
+      required:
+        - nombre
+        - apellido_paterno
+        - institucion_nombre
+        - titulo_obtenido
+      properties:
+        nombre:
+          type: string
+          description: Nombre de la persona
+          minLength: 1
+          maxLength: 100
+          example: "Ana"
+        apellido_paterno:
+          type: string
+          description: Apellido paterno de la persona
+          minLength: 1
+          maxLength: 100
+          example: "Rodríguez"
+        institucion_nombre:
+          type: string
+          description: Nombre de la institución educativa
+          minLength: 1
+          maxLength: 200
+          example: "Universidad Privada"
+        titulo_obtenido:
+          type: string
+          description: Título o grado obtenido
+          minLength: 1
+          maxLength: 200
+          example: "Ingeniera en Software"
+
+    GradoResponse:
+      type: object
+      required:
+        - id
+        - nombre
+        - apellido_paterno
+        - institucion_nombre
+        - titulo_obtenido
+        - timestamp
+        - estado
+      properties:
+        id:
+          type: string
+          description: ID de la transacción
+          example: "tx_004"
+        nombre:
+          type: string
+          example: "Ana"
+        apellido_paterno:
+          type: string
+          example: "Rodríguez"
+        institucion_nombre:
+          type: string
+          example: "Universidad Privada"
+        titulo_obtenido:
+          type: string
+          example: "Ingeniera en Software"
+        timestamp:
+          type: string
+          format: date-time
+          description: Fecha y hora de creación de la transacción
+          example: "2026-03-29T10:30:45Z"
+        estado:
+          type: string
+          enum: [pendiente, minada]
+          description: Estado actual de la transacción
+          example: "pendiente"
+
+    MineResponse:
+      type: object
+      required:
+        - mensaje
+        - bloques_minados
+      properties:
+        mensaje:
+          type: string
+          description: Mensaje descriptivo del resultado de la minería
+          example: "Bloque minado exitosamente"
+        bloques_minados:
+          type: integer
+          description: Número total de bloques minados en la cadena
+          example: 2
+        bloque:
+          $ref: '#/components/schemas/Block'
+          description: Objeto del bloque recientemente minado
+
+    ResolveResponse:
+      type: object
+      required:
+        - mensaje
+        - reemplazada
+      properties:
+        mensaje:
+          type: string
+          description: Mensaje descriptivo del proceso de resolución
+          example: "Cadena actualizada desde nodo par"
+        reemplazada:
+          type: boolean
+          description: Indica si la cadena fue reemplazada
+          example: true
+        bloques:
+          type: integer
+          description: Número de bloques en la cadena resuelta
+          example: 3
+
+    ResolveResponseNoChange:
+      type: object
+      required:
+        - mensaje
+        - reemplazada
+      properties:
+        mensaje:
+          type: string
+          description: Mensaje descriptivo del proceso de resolución
+          example: "La cadena actual es autoritativa"
+        reemplazada:
+          type: boolean
+          description: Indica que la cadena no fue reemplazada
+          example: false
+
+    NodeRegisterRequest:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          format: uri
+          description: URL del nodo par a registrar
+          example: "http://localhost:8010"
+
+    NodeRegisterResponse:
+      type: object
+      required:
+        - mensaje
+        - url
+      properties:
+        mensaje:
+          type: string
+          description: Mensaje de confirmación
+          example: "Nodo registrado exitosamente"
+        url:
+          type: string
+          format: uri
+          description: URL del nodo registrado
+          example: "http://localhost:8010"
+
+    RegisteredNodesResponse:
+      type: object
+      required:
+        - peers
+      properties:
+        peers:
+          type: array
+          description: Lista de nodos pares registrados
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+                example: "http://localhost:8010"
+              estado:
+                type: string
+                enum: [conectado, desconectado]
+                description: Estado de conexión del nodo
+                example: "conectado"
+
+    ValidationResponse:
+      type: object
+      required:
+        - valida
+        - bloques
+      properties:
+        valida:
+          type: boolean
+          description: Indica si la cadena es válida
+          example: true
+        bloques:
+          type: integer
+          description: Número de bloques validados
+          example: 3
+        mensaje:
+          type: string
+          description: Mensaje descriptivo de la validación
+          example: "Cadena válida"
+
+    ValidationErrorResponse:
+      type: object
+      required:
+        - valida
+        - bloques
+      properties:
+        valida:
+          type: boolean
+          description: Indica que la cadena es inválida
+          example: false
+        bloques:
+          type: integer
+          description: Número de bloques analizados
+          example: 3
+        error:
+          type: string
+          description: Descripción del error encontrado
+          example: "Hash inválido en bloque 2"
+        bloque_problematico:
+          type: integer
+          description: Índice del bloque con problema
+          example: 2
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Descripción del error
+          example: "Faltan campos requeridos"
+        detalles:
+          type: object
+          description: Detalles adicionales del error (opcional)
+          example:
+            campos_requeridos:
+              - nombre
+              - apellido_paterno
