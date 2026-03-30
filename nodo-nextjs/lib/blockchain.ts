@@ -208,6 +208,7 @@ export async function propagarANodos(
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(3000),
       })
 
       if (!response.ok) {

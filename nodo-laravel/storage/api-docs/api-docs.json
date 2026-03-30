@@ -1,0 +1,123 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Blockchain API",
+        "description": "API para interactuar con el Nodo Blockchain en Laravel.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8010/api",
+            "description": "Local API Server"
+        }
+    ],
+    "paths": {
+        "/blockchain": {
+            "get": {
+                "summary": "Lista todos los grados (La Chain)",
+                "description": "Lista todos los grados (La \"Chain\")",
+                "operationId": "8df0536aa50706f61c9822fbe3e4a267",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/transactions": {
+            "post": {
+                "summary": "Agrega una transacción a la mempool y la propaga",
+                "description": "Agrega una transacción a la mempool y la propaga",
+                "operationId": "5fa57ca8f757e226bac034877945472f",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/blockchain/mine": {
+            "post": {
+                "summary": "Mina las transacciones pendientes en un nuevo bloque",
+                "description": "Mina las transacciones pendientes en un nuevo bloque",
+                "operationId": "a6a25bd54d22a73b60085df428388bf5",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/blockchain/receive-block": {
+            "post": {
+                "summary": "Recibe un bloque minado por otro nodo y lo valida",
+                "description": "Recibe un bloque minado por otro nodo y lo valida",
+                "operationId": "a902dfffb348e452b6496e72458e4b58",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/blockchain/resolve": {
+            "get": {
+                "summary": "Algoritmo de Consenso: Reemplaza la cadena con la más larga de los vecinos",
+                "description": "Algoritmo de Consenso: Reemplaza la cadena con la más larga de los vecinos",
+                "operationId": "3e69ba3623ab90b9a56aa80ffe29ab08",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/blockchain/validate": {
+            "get": {
+                "summary": "Valida la integridad de la cadena local",
+                "description": "Valida la integridad de la cadena local",
+                "operationId": "2561e4c0b1abc65f5ee607ce55f8ac0c",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/nodes/register": {
+            "post": {
+                "summary": "Registra un nuevo nodo vecino",
+                "description": "Registra un nuevo nodo vecino",
+                "operationId": "0b9c832d536cd88bb69ed601fdaca766",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/nodes": {
+            "get": {
+                "summary": "Lista los nodos vecinos registrados",
+                "description": "Lista los nodos vecinos registrados",
+                "operationId": "bcebe1ecb0cffb46b55b4632c942e30d",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/test": {
+            "get": {
+                "summary": "Test endpoint",
+                "operationId": "8c679225a1e8478d550461677ce1a9cf",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        }
+    }
+}

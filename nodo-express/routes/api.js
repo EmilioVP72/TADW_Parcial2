@@ -5,7 +5,7 @@ import { broadcastTransaction } from "../services/network.js";
 import { registerNodes } from "../services/network.js";
 import { getPendingTransactions, addBlock, replaceChain } from "../blockchain/blockchain.js";
 import { mineBlock } from "../blockchain/proofOfWork.js";
-import { calculateHash } from "../blockchain/hash.js";
+import { calculateHash, calculateGradoHash } from "../blockchain/hash.js";
 import supabase from "../services/supabase.js";
 import { getNodes } from "../services/network.js";
 import axios from "axios";
@@ -21,7 +21,7 @@ router.get("/status", (req, res) => {
   });
 });
 
-router.get("/chain", (req, res) => {
+router.get("/blockchain", (req, res) => {
   res.json(getChain());
 });
 
@@ -30,14 +30,17 @@ router.post("/transactions", async (req, res) => {
 
   addTransaction(transaction);
 
-  await broadcastTransaction(transaction);
+  if (!transaction.is_broadcast) {
+    transaction.is_broadcast = true;
+    broadcastTransaction(transaction).catch(console.error);
+  }
 
   res.json({
-    message: "Transacción agregada y propagada"
+    message: "Transacción agregada a mempool"
   });
 });
 
-router.post("/mine", async (req, res) => {
+router.post("/blockchain/mine", async (req, res) => {
   const chain = getChain();
   const pending = getPendingTransactions();
 
@@ -64,7 +67,7 @@ router.post("/mine", async (req, res) => {
 
   for (const node of nodes) {
     try {
-      await axios.post(`${node}/api/receive-block`, minedBlock);
+      await axios.post(`${node}/api/blockchain/receive-block`, minedBlock);
       console.log("Bloque enviado a:", node);
     } catch (err) {
       console.log("Error enviando bloque a:", node);
@@ -115,7 +118,7 @@ router.post("/mine", async (req, res) => {
   });
 });
 
-router.get("/validate", (req, res) => {
+router.get("/blockchain/validate", (req, res) => {
   const chain = getChain();
 
   for (let i = 1; i < chain.length; i++) {
@@ -137,13 +140,17 @@ router.get("/validate", (req, res) => {
 });
 
 router.post("/nodes/register", (req, res) => {
-  const { nodes } = req.body;
-
-  registerNodes(nodes);
+  const { nodes, url } = req.body;
+  
+  if (nodes) {
+    registerNodes(nodes);
+  } else if (url) {
+    registerNodes([url]);
+  }
 
   res.json({
     message: "Nodos registrados",
-    nodes
+    nodes: nodes || [url]
   });
 });
 
@@ -151,7 +158,7 @@ router.get("/nodes", (req, res) => {
   res.json({ nodes: getNodes() });
 });
 
-router.get("/nodes/resolve", async (req, res) => {
+router.get("/blockchain/resolve", async (req, res) => {
   const nodes = getNodes();
   let longestChain = getChain();
   let maxLen = longestChain.length;
@@ -159,7 +166,7 @@ router.get("/nodes/resolve", async (req, res) => {
 
   for (const node of nodes) {
     try {
-      const response = await axios.get(`${node}/api/chain`);
+      const response = await axios.get(`${node}/api/blockchain`);
       const neighborChain = response.data;
 
       if (neighborChain.length > maxLen) {
@@ -188,19 +195,32 @@ router.get("/nodes/resolve", async (req, res) => {
   });
 });
 
-router.post("/receive-block", (req, res) => {
-  const newBlock = req.body;
+router.post("/blockchain/receive-block", (req, res) => {
+  const incoming = req.body;
+  
+  // Map fields from Laravel/NextJS if they exist
+  const newBlock = {
+    ...incoming,
+    hash: incoming.hash || incoming.hash_actual,
+    previous_hash: incoming.previous_hash || incoming.hash_anterior || "0"
+  };
 
   const chain = getChain();
   const lastBlock = chain[chain.length - 1];
 
-  if (newBlock.previous_hash !== lastBlock.hash) {
+  if (lastBlock && newBlock.previous_hash !== lastBlock.hash) {
     return res.json({
       message: "Bloque rechazado (hash anterior incorrecto)"
     });
   }
 
-  const recalculatedHash = calculateHash(newBlock);
+  // Para bloques tipo grado (de Laravel/NextJS), usar algoritmo unificado
+  let recalculatedHash;
+  if (incoming.hash_actual !== undefined) {
+    recalculatedHash = calculateGradoHash(incoming);
+  } else {
+    recalculatedHash = calculateHash(newBlock);
+  }
 
   if (recalculatedHash !== newBlock.hash) {
     return res.json({
@@ -208,7 +228,7 @@ router.post("/receive-block", (req, res) => {
     });
   }
 
-  if (!newBlock.hash.startsWith("000")) {
+  if (!newBlock.hash.startsWith("00")) {
     return res.json({
       message: "Bloque rechazado (no cumple PoW)"
     });

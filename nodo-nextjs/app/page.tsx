@@ -34,7 +34,7 @@ export default function Home() {
   const fetchChain = async () => {
     setLoadingChain(true)
     try {
-      const response = await fetch('/api/chain')
+      const response = await fetch('/api/blockchain')
       if (response.ok) {
         const data = await response.json()
         setBloques(data)
@@ -65,7 +65,7 @@ export default function Home() {
     setLoadingMine(true)
     setMineMessage('')
     try {
-      const response = await fetch('/api/mine', {
+      const response = await fetch('/api/blockchain/mine', {
         method: 'POST',
       })
       const data = await response.json()
@@ -87,7 +87,7 @@ export default function Home() {
     setLoadingResolve(true)
     setResolveMessage('')
     try {
-      const response = await fetch('/api/nodes/resolve')
+      const response = await fetch('/api/blockchain/resolve')
       const data = await response.json()
       if (response.ok) {
         setResolveMessage(`✓ ${data.mensaje}`)

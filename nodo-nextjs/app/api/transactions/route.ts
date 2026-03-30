@@ -97,8 +97,12 @@ export async function POST(req: Request) {
       )
     }
 
-    // 4. Propagar a otros nodos
-    await propagarANodos("/api/transactions", body)
+    // 4. Propagar a otros nodos si no es un rebote de red
+    if (!body.is_broadcast) {
+      // Enviamos el objeto completo con UUIDs resueltos, no el form body original
+      const payload = { ...insertedGrado, is_broadcast: true }
+      propagarANodos("/api/transactions", payload).catch(console.error)
+    }
 
     return NextResponse.json(insertedGrado, { status: 201 })
   } catch (err) {

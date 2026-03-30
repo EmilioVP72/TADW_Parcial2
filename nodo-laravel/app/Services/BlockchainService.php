@@ -5,13 +5,17 @@ class BlockchainService {
     protected $difficulty = "00";
 
     public function calculateHash($grado) {
-        $string = $grado->persona_id . 
-                      $grado->institucion_id . 
-                      $grado->programa_id . 
-                      $grado->numero_cedula . 
-                      $grado->hash_anterior . 
-                      $grado->nonce;
-
+        // IMPORTANTE: Este algoritmo debe ser idéntico al de Next.js (lib/blockchain.ts)
+        // Formato: persona_id|institucion_id|titulo_obtenido|fecha_fin|hash_anterior|nonce
+        $parts = [
+            $grado->persona_id ?? '',
+            $grado->institucion_id ?? '',
+            $grado->titulo_obtenido ?? '',
+            $grado->fecha_fin ?? '',
+            $grado->hash_anterior ?? '',
+            (string)($grado->nonce ?? 0),
+        ];
+        $string = implode('|', $parts);
         return hash('sha256', $string);
     }
 

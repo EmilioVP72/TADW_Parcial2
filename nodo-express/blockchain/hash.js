@@ -11,3 +11,19 @@ export function calculateHash(block) {
 
   return crypto.createHash("sha256").update(dataString).digest("hex");
 }
+
+/**
+ * Hash estándar compartido con Laravel y Next.js:
+ * persona_id|institucion_id|titulo_obtenido|fecha_fin|hash_anterior|nonce
+ */
+export function calculateGradoHash(grado) {
+  const parts = [
+    grado.persona_id ?? '',
+    grado.institucion_id ?? '',
+    grado.titulo_obtenido ?? '',
+    grado.fecha_fin ?? '',
+    grado.hash_anterior ?? '',
+    String(grado.nonce ?? 0),
+  ];
+  return crypto.createHash("sha256").update(parts.join("|")).digest("hex");
+}

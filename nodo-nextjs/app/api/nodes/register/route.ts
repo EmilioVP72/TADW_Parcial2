@@ -5,21 +5,25 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
 
-    const { url } = body
+    const { url, nodes } = body
 
-    if (!url) {
+    if (!url && (!nodes || !Array.isArray(nodes))) {
       return NextResponse.json(
-        { error: "Missing required field: url" },
+        { error: "Missing required field: url or nodes array" },
         { status: 400 }
       )
     }
 
-    addPeerNode(url)
+    if (nodes) {
+      nodes.forEach((n: string) => addPeerNode(n))
+    } else if (url) {
+      addPeerNode(url)
+    }
 
     return NextResponse.json(
       {
-        mensaje: "Nodo registrado",
-        url,
+        mensaje: "Nodos registrados",
+        nodes: nodes || [url],
       },
       { status: 201 }
     )

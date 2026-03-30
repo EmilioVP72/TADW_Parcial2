@@ -10,6 +10,8 @@ services:
       - ./nodo-laravel:/var/www/html
     networks:
       - blockchain-net
+    environment:
+      - PEER_NODES=http://blockchain-express:3000,http://blockchain-next:3000
 
   # Nodo 2: Express
   nodo-express:
@@ -23,6 +25,8 @@ services:
       - /usr/src/app/node_modules
     networks:
       - blockchain-net
+    environment:
+      - PEER_NODES=http://blockchain-laravel:8000,http://blockchain-next:3000
 
   # Nodo 3: Next.js
   nodo-nextjs:
@@ -37,6 +41,8 @@ services:
       - /usr/src/app/.next
     networks:
       - blockchain-net
+    environment:
+      - PEER_NODES=http://blockchain-laravel:8000,http://blockchain-express:3000
 
 networks:
   blockchain-net:

@@ -9,8 +9,8 @@ export async function GET() {
     const peerNodes = getPeerNodes()
 
     // 2. Consultar cadena local
-    const baseUrl = process.env.NODE_URL || "http://localhost:8012"
-    const localResponse = await fetch(`${baseUrl}/api/chain`)
+    const baseUrl = process.env.NODE_URL || "http://localhost:3000"
+    const localResponse = await fetch(`${baseUrl}/api/blockchain`)
     if (!localResponse.ok) {
       return NextResponse.json(
         { error: "Error al consultar cadena local" },
@@ -25,7 +25,7 @@ export async function GET() {
 
     for (const peerUrl of peerNodes) {
       try {
-        const response = await fetch(`${peerUrl}/api/chain`)
+        const response = await fetch(`${peerUrl}/api/blockchain`)
         if (response.ok) {
           const cadenaPeer: GradoBloque[] = await response.json()
 

@@ -1,6 +1,9 @@
 import axios from "axios";
 
-let nodes = [];
+// Inicializar con nodos de variable de entorno si existen
+const envNodes = process.env.PEER_NODES ? process.env.PEER_NODES.split(",").map(n => n.trim()).filter(Boolean) : [];
+let nodes = [...envNodes];
+
 
 export function registerNodes(newNodes) {
   newNodes.forEach(node => {

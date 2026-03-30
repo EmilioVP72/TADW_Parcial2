@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
+use OpenApi\Attributes as OA;
 
 class GradoController extends Controller
 {
@@ -23,20 +24,39 @@ class GradoController extends Controller
     /**
      * Lista todos los grados (La "Chain")
      */
+    #[OA\Get(
+        path: '/blockchain',
+        summary: 'Lista todos los grados (La Chain)',
+        responses: [
+            new OA\Response(response: 200, description: 'OK')
+        ]
+    )]
     public function index()
     {
         return response()->json(Grado::with(['persona', 'institucion', 'programa'])->orderBy('creado_en', 'asc')->get());
     }
 
     /**
-     * @OA\Post(
-     *     path="/transactions",
-     *     summary="Agrega una transacción a la mempool y la propaga",
-     *     @OA\Response(response=200, description="OK")
-     * )
+     * Agrega una transacción a la mempool y la propaga
      */
+    #[OA\Post(
+        path: '/transactions',
+        summary: 'Agrega una transacción a la mempool y la propaga',
+        responses: [
+            new OA\Response(response: 200, description: 'OK')
+        ]
+    )]
     public function storeTransaction(Request $request)
     {
+        // Si es un broadcast de otro nodo, insertar directamente sin validación estricta
+        if ($request->input('is_broadcast')) {
+            $allowed = ['persona_id', 'institucion_id', 'programa_id', 'fecha_inicio', 'fecha_fin',
+                        'titulo_obtenido', 'numero_cedula', 'firmado_por', 'titulo_tesis', 'menciones'];
+            $data = $request->only($allowed);
+            $tx = PendingTransaction::create($data);
+            return response()->json(['message' => 'Transacción recibida (broadcast)', 'data' => $tx], 201);
+        }
+
         $validator = Validator::make($request->all(), [
             'persona_id'      => 'required|uuid',
             'institucion_id'  => 'required|uuid',
@@ -54,13 +74,18 @@ class GradoController extends Controller
 
         $tx = PendingTransaction::create($request->all());
 
-        // Propagar transacción
-        $nodos = PeerNode::all();
-        foreach ($nodos as $nodo) {
-            try {
-                Http::timeout(3)->post($nodo->url . '/api/transactions', $tx->toArray());
-            } catch (\Exception $e) {
-                // Ignore timeout
+        if (!$request->input('is_broadcast')) {
+            // Propagar transacción
+            $nodos = PeerNode::all();
+            $payload = $tx->toArray();
+            $payload['is_broadcast'] = true;
+
+            foreach ($nodos as $nodo) {
+                try {
+                    Http::timeout(3)->post($nodo->url . '/api/transactions', $payload);
+                } catch (\Exception $e) {
+                    // Ignore timeout
+                }
             }
         }
 
@@ -68,12 +93,15 @@ class GradoController extends Controller
     }
 
     /**
-     * @OA\Post(
-     *     path="/blockchain/mine",
-     *     summary="Mina las transacciones pendientes en un nuevo bloque",
-     *     @OA\Response(response=200, description="OK")
-     * )
+     * Mina las transacciones pendientes en un nuevo bloque
      */
+    #[OA\Post(
+        path: '/blockchain/mine',
+        summary: 'Mina las transacciones pendientes en un nuevo bloque',
+        responses: [
+            new OA\Response(response: 200, description: 'OK')
+        ]
+    )]
     public function mine()
     {
         $pendientes = PendingTransaction::all();
@@ -129,12 +157,15 @@ class GradoController extends Controller
     }
 
     /**
-     * @OA\Post(
-     *     path="/blockchain/receive-block",
-     *     summary="Recibe un bloque minado por otro nodo y lo valida",
-     *     @OA\Response(response=200, description="OK")
-     * )
+     * Recibe un bloque minado por otro nodo y lo valida
      */
+    #[OA\Post(
+        path: '/blockchain/receive-block',
+        summary: 'Recibe un bloque minado por otro nodo y lo valida',
+        responses: [
+            new OA\Response(response: 200, description: 'OK')
+        ]
+    )]
     public function receiveBlock(Request $request)
     {
         $blockData = $request->all();
@@ -166,12 +197,15 @@ class GradoController extends Controller
     }
 
     /**
-     * @OA\Get(
-     *     path="/blockchain/resolve",
-     *     summary="Algoritmo de Consenso: Reemplaza la cadena con la más larga de los vecinos",
-     *     @OA\Response(response=200, description="OK")
-     * )
+     * Algoritmo de Consenso: Reemplaza la cadena con la más larga de los vecinos
      */
+    #[OA\Get(
+        path: '/blockchain/resolve',
+        summary: 'Algoritmo de Consenso: Reemplaza la cadena con la más larga de los vecinos',
+        responses: [
+            new OA\Response(response: 200, description: 'OK')
+        ]
+    )]
     public function resolve()
     {
         $nodos = PeerNode::all();
@@ -221,12 +255,15 @@ class GradoController extends Controller
     }
 
     /**
-     * @OA\Get(
-     *     path="/blockchain/validate",
-     *     summary="Valida la integridad de la cadena local",
-     *     @OA\Response(response=200, description="OK")
-     * )
+     * Valida la integridad de la cadena local
      */
+    #[OA\Get(
+        path: '/blockchain/validate',
+        summary: 'Valida la integridad de la cadena local',
+        responses: [
+            new OA\Response(response: 200, description: 'OK')
+        ]
+    )]
     public function validateChain()
     {
         $grados = Grado::orderBy('creado_en', 'asc')->get();
@@ -259,26 +296,46 @@ class GradoController extends Controller
     }
 
     /**
-     * @OA\Post(
-     *     path="/nodes/register",
-     *     summary="Registra un nuevo nodo vecino",
-     *     @OA\Response(response=200, description="OK")
-     * )
+     * Registra un nuevo nodo vecino
      */
+    #[OA\Post(
+        path: '/nodes/register',
+        summary: 'Registra un nuevo nodo vecino',
+        responses: [
+            new OA\Response(response: 200, description: 'OK')
+        ]
+    )]
     public function registerNode(Request $request)
     {
-        $request->validate(['url' => 'required|url']);
-        PeerNode::firstOrCreate(['url' => $request->url]);
+        $request->validate([
+            'url' => 'nullable|url',
+            'nodes' => 'nullable|array',
+            'nodes.*' => 'url',
+        ]);
+
+        if ($request->has('nodes')) {
+            foreach ($request->nodes as $node_url) {
+                PeerNode::firstOrCreate(['url' => $node_url]);
+            }
+        } elseif ($request->has('url')) {
+            PeerNode::firstOrCreate(['url' => $request->url]);
+        } else {
+            return response()->json(['message' => 'Falta campo url o nodes'], 400);
+        }
+
         return response()->json(['message' => 'Nodo registrado exitosamente'], 201);
     }
 
     /**
-     * @OA\Get(
-     *     path="/nodes",
-     *     summary="Lista los nodos vecinos registrados",
-     *     @OA\Response(response=200, description="OK")
-     * )
+     * Lista los nodos vecinos registrados
      */
+    #[OA\Get(
+        path: '/nodes',
+        summary: 'Lista los nodos vecinos registrados',
+        responses: [
+            new OA\Response(response: 200, description: 'OK')
+        ]
+    )]
     public function getNodes()
     {
         return response()->json(PeerNode::all());

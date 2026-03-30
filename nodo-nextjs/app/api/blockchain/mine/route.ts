@@ -76,10 +76,17 @@ export async function POST(req: Request) {
 
       hashAnterior = hash
       bloquesMInados++
-    }
+      
+      const nuevoBloque = {
+        ...transaccion,
+        hash_actual: hash,
+        hash_anterior: hashAnterior,
+        nonce,
+      };
 
-    // 5. Propagar a otros nodos
-    await propagarANodos("/api/mine", {})
+      // 5. Propagar a otros nodos bloque por bloque
+      await propagarANodos("/api/blockchain/receive-block", nuevoBloque)
+    }
 
     // 6. Retornar resultado
     return NextResponse.json(
