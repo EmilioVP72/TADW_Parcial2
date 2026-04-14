@@ -1,0 +1,86 @@
+{
+  "info": {
+    "_postman_id": "express-collection-id-12345",
+    "name": "Nodo Express - Blockchain",
+    "description": "Colección de endpoints para el nodo de Express.js",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Obtener Status",
+      "request": {
+        "method": "GET",
+        "url": "{{local_url}}/api/status"
+      }
+    },
+    {
+      "name": "Obtener Blockchain",
+      "request": {
+        "method": "GET",
+        "url": "{{local_url}}/api/blockchain"
+      }
+    },
+    {
+      "name": "Crear Transacción",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"persona_id\": 1,\n  \"institucion_id\": 1,\n  \"programa_id\": 1,\n  \"fecha_inicio\": \"2020-01-01\",\n  \"fecha_fin\": \"2024-01-01\",\n  \"titulo_obtenido\": \"Ingeniero de Sistemas\",\n  \"numero_cedula\": 12345678,\n  \"titulo_tesis\": \"Desarrollo Blockchain Distribuido\",\n  \"menciones\": \"Cum Laude\"\n}"
+        },
+        "url": "{{local_url}}/api/transactions"
+      }
+    },
+    {
+      "name": "Minar Bloque",
+      "request": {
+        "method": "POST",
+        "url": "{{local_url}}/api/blockchain/mine"
+      }
+    },
+    {
+      "name": "Validar Cadena",
+      "request": {
+        "method": "GET",
+        "url": "{{local_url}}/api/blockchain/validate"
+      }
+    },
+    {
+      "name": "Consenso (Resolver)",
+      "request": {
+        "method": "GET",
+        "url": "{{local_url}}/api/blockchain/resolve"
+      }
+    },
+    {
+      "name": "Registrar Nodo",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nodes\": [\n    \"http://localhost:8000\",\n    \"http://localhost:3000\"\n  ]\n}"
+        },
+        "url": "{{local_url}}/api/nodes/register"
+      }
+    },
+    {
+      "name": "Obtener Nodos Registrados",
+      "request": {
+        "method": "GET",
+        "url": "{{local_url}}/api/nodes"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "local_url",
+      "value": "http://localhost:3001"
+    }
+  ]
+}

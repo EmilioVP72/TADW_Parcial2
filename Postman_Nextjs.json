@@ -1,0 +1,79 @@
+{
+  "info": {
+    "_postman_id": "nextjs-collection-id-12345",
+    "name": "Nodo Next.js - Blockchain",
+    "description": "Colección de endpoints para el nodo de Next.js (App Router) en la red Blockchain",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Obtener Status",
+      "request": {
+        "method": "GET",
+        "url": "{{local_url}}/api/status"
+      }
+    },
+    {
+      "name": "Obtener Blockchain",
+      "request": {
+        "method": "GET",
+        "url": "{{local_url}}/api/blockchain"
+      }
+    },
+    {
+      "name": "Crear Transacción",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"persona_id\": 3,\n  \"institucion_id\": 4,\n  \"programa_id\": 2,\n  \"fecha_inicio\": \"2022-01-01\",\n  \"fecha_fin\": \"2026-01-01\",\n  \"titulo_obtenido\": \"Doctorado en Ciencias\",\n  \"numero_cedula\": 55555555,\n  \"titulo_tesis\": \"Redes P2P descentralizadas\",\n  \"menciones\": \"Magna Cum Laude\"\n}"
+        },
+        "url": "{{local_url}}/api/transactions"
+      }
+    },
+    {
+      "name": "Minar Bloque",
+      "request": {
+        "method": "POST",
+        "url": "{{local_url}}/api/blockchain/mine"
+      }
+    },
+    {
+      "name": "Consenso (Resolver)",
+      "request": {
+        "method": "GET",
+        "url": "{{local_url}}/api/blockchain/resolve"
+      }
+    },
+    {
+      "name": "Registrar Nodo",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nodes\": [\n    \"http://localhost:3001\",\n    \"http://localhost:8000\"\n  ]\n}"
+        },
+        "url": "{{local_url}}/api/nodes/register"
+      }
+    },
+    {
+      "name": "Ver Documentación",
+      "request": {
+        "method": "GET",
+        "url": "{{local_url}}/api/docs"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "local_url",
+      "value": "http://localhost:3000"
+    }
+  ]
+}

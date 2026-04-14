@@ -1,0 +1,79 @@
+{
+  "info": {
+    "_postman_id": "laravel-collection-id-12345",
+    "name": "Nodo Laravel - Blockchain",
+    "description": "Colección de endpoints para el nodo de Laravel en la red Blockchain",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Obtener Blockchain",
+      "request": {
+        "method": "GET",
+        "url": "{{local_url}}/api/blockchain"
+      }
+    },
+    {
+      "name": "Crear Transacción",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"persona_id\": 2,\n  \"institucion_id\": 2,\n  \"programa_id\": 3,\n  \"fecha_inicio\": \"1999-01-01\",\n  \"fecha_fin\": \"2004-01-01\",\n  \"titulo_obtenido\": \"Licenciado en Software\",\n  \"numero_cedula\": 98765432,\n  \"titulo_tesis\": \"Desarrollo con Laravel MVC\",\n  \"menciones\": \"Honores\"\n}"
+        },
+        "url": "{{local_url}}/api/transactions"
+      }
+    },
+    {
+      "name": "Minar Bloque",
+      "request": {
+        "method": "POST",
+        "url": "{{local_url}}/api/blockchain/mine"
+      }
+    },
+    {
+      "name": "Validar Cadena",
+      "request": {
+        "method": "GET",
+        "url": "{{local_url}}/api/blockchain/validate"
+      }
+    },
+    {
+      "name": "Consenso (Resolver)",
+      "request": {
+        "method": "GET",
+        "url": "{{local_url}}/api/blockchain/resolve"
+      }
+    },
+    {
+      "name": "Registrar Nodo",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nodes\": [\n    \"http://localhost:3000\",\n    \"http://localhost:3001\"\n  ]\n}"
+        },
+        "url": "{{local_url}}/api/nodes/register"
+      }
+    },
+    {
+      "name": "Obtener Nodos Registrados",
+      "request": {
+        "method": "GET",
+        "url": "{{local_url}}/api/nodes"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "local_url",
+      "value": "http://localhost:8000"
+    }
+  ]
+}
